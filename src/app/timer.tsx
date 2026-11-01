@@ -1,5 +1,6 @@
+import { useAudioPlayer } from "expo-audio";
 import { useFonts } from "expo-font";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { View } from "react-native";
 import Controls from "./controls";
 import Screen from "./screen";
@@ -60,6 +61,23 @@ export default function Timer() {
       setTime(roundTime);
     }
   }, [time, isRunning, phase, currentRound, rounds, roundTime, restTime]);
+
+  // Interval beep
+  const beep = useAudioPlayer(require("../../assets/sounds/beep.wav"));
+  const lastBeepCheck = useRef(time);
+
+  useEffect(() => {
+    if (lastBeepCheck.current === time) return;
+    lastBeepCheck.current = time;
+
+    if (!isRunning || phase !== "runningRound" || intBeep === 0) return;
+
+    const elapsed = roundTime - time;
+    if (time > 0 && elapsed > 0 && elapsed % intBeep === 0) {
+      beep.seekTo(0);
+      beep.play();
+    }
+  }, [time, isRunning, phase, intBeep, roundTime, beep]);
 
   // Adjust settings
   function adjustSetting(direction: 1 | -1) {
