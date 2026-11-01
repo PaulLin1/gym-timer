@@ -2,7 +2,7 @@ import { useFonts } from "expo-font";
 import { useState, useEffect } from "react";
 import { Pressable, Text, View } from "react-native";
 
-type Mode = "roundTime" | "restTime" | "intBeep" | "rounds";
+type Mode = "roundTime" | "restTime" | "intBeep" | "rounds" | "runningRound" | "runningRest";
 
 const buttons = [
   { name: "ROUND TIME", action: "roundTime" },
@@ -49,8 +49,9 @@ export default function Index() {
     Digital: require("../../assets/fonts/digital-7 (mono italic).ttf"),
   });
 
-  const [time, setTime] = useState(5);
+  const [time, setTime] = useState(5 * 60);
   const [isRunning, setIsRunning] = useState(false);
+  const [isRound, setIsRound] = useState(true);
 
   useEffect(() => {
     if (!isRunning) {
@@ -110,6 +111,7 @@ export default function Index() {
         adjustSetting(-1);
         break;
       case "start":
+        setTime(roundTime);
         setIsRunning(true);
         break;
       case "stop":
@@ -128,7 +130,7 @@ export default function Index() {
             className="text-white/20 text-[125px]"
             style={displayTextStyle}
           >
-            8.8.8.
+            8.8.8
           </Text>
 
           <Text
@@ -136,7 +138,33 @@ export default function Index() {
             className="absolute top-0 left-0 text-red-500 text-[125px]"
             style={displayTextStyle}
           >
-            {styleTime(time)}
+            {(() => {
+              let out;
+
+              if (isRunning) {
+                out = time;
+              } else {
+              switch (mode) {
+                case "roundTime":
+                  out = roundTime;
+                  break;
+                case "restTime":
+                  out = restTime;
+                  break;
+                case "intBeep":
+                  out = intBeep;
+                  break;
+                case "rounds":
+                  out = rounds;
+                  break;
+                default:
+                  out = 0;
+              }
+              }
+
+
+              return styleTime(out);
+            })()}
           </Text>
         </View>
       </View>
