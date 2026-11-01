@@ -1,5 +1,5 @@
 import { useFonts } from "expo-font";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Pressable, Text, View } from "react-native";
 
 type Mode = "roundTime" | "restTime" | "intBeep" | "rounds";
@@ -49,7 +49,29 @@ export default function Index() {
     Digital: require("../../assets/fonts/digital-7 (mono italic).ttf"),
   });
 
-  const [roundTime, setRoundTime] = useState(1);
+  const [time, setTime] = useState(5);
+  const [isRunning, setIsRunning] = useState(false);
+
+  useEffect(() => {
+    if (!isRunning) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setTime((prev) => {
+        if (prev <= 1) {
+          setIsRunning(false);
+          return 0;
+        }
+
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isRunning]);
+
+  const [roundTime, setRoundTime] = useState(60);
   const [restTime, setRestTime] = useState(90);
   const [intBeep, setIntBeep] = useState(60);
   const [rounds, setRounds] = useState(1);
@@ -87,6 +109,13 @@ export default function Index() {
       case "down":
         adjustSetting(-1);
         break;
+      case "start":
+        setIsRunning(true);
+        break;
+      case "stop":
+        setIsRunning(false);
+        setTime(roundTime);
+        break;
     }
   }
 
@@ -107,7 +136,7 @@ export default function Index() {
             className="absolute top-0 left-0 text-red-500 text-[125px]"
             style={displayTextStyle}
           >
-            {styleTime(roundTime)}
+            {styleTime(time)}
           </Text>
         </View>
       </View>
