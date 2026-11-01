@@ -1,0 +1,145 @@
+import { useFonts } from "expo-font";
+import { useState, useEffect } from "react";
+import { View } from "react-native";
+import Controls from "./controls";
+import Screen from "./screen";
+
+type Mode = "roundTime" | "restTime" | "intBeep" | "rounds";
+
+export type Phase = "ready" | "runningRound" | "runningRest" | "finished";
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+export default function Timer() {
+  const [fontsLoaded, fontError] = useFonts({
+    Digital: require("../../assets/fonts/digital-7 (mono italic).ttf"),
+  });
+
+  // Timer state
+  const [time, setTime] = useState(60);
+  const [phase, setPhase] = useState<Phase>("ready");
+  const [isRunning, setIsRunning] = useState(false);
+  const [currentRound, setCurrentRound] = useState(1);
+
+  // Timer settings
+  const [roundTime, setRoundTime] = useState(60);
+  const [restTime, setRestTime] = useState(90);
+  const [intBeep, setIntBeep] = useState(60);
+  const [rounds, setRounds] = useState(1);
+
+  const [mode, setMode] = useState<Mode>();
+
+  // Countdown
+  useEffect(() => {
+    if (!isRunning) return;
+
+    const interval = setInterval(() => {
+      setTime((prev) => Math.max(prev - 1, 0));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isRunning]);
+
+  // Handle round/rest transitions
+  useEffect(() => {
+    if (!isRunning || time !== 0) return;
+
+    if (phase === "runningRound") {
+      if (currentRound >= rounds) {
+        setPhase("finished");
+        setIsRunning(false);
+      } else {
+        setPhase("runningRest");
+        setTime(restTime);
+      }
+    } else if (phase === "runningRest") {
+      setCurrentRound((prev) => prev + 1);
+      setPhase("runningRound");
+      setTime(roundTime);
+    }
+  }, [time, isRunning, phase, currentRound, rounds, roundTime, restTime]);
+
+  // Adjust settings
+  function adjustSetting(direction: 1 | -1) {
+    switch (mode) {
+      case "roundTime":
+        setRoundTime((prev) => clamp(prev + direction * 60, 60, 9 * 60));
+        break;
+      case "restTime":
+        setRestTime((prev) => clamp(prev + direction * 5, 0, 90));
+        break;
+      case "intBeep":
+        setIntBeep((prev) => clamp(prev + direction * 5, 0, 60));
+        break;
+      case "rounds":
+        setRounds((prev) => clamp(prev + direction, 1, 9));
+        break;
+    }
+  }
+
+  // Start / pause / resume
+  function start() {
+    if (phase === "ready" || phase === "finished") {
+      setCurrentRound(1);
+      setTime(roundTime);
+      setPhase("runningRound");
+      setIsRunning(true);
+    } else {
+      setIsRunning((prev) => !prev);
+    }
+  }
+
+  // Stop / reset
+  function stop() {
+    setIsRunning(false);
+    setPhase("ready");
+    setCurrentRound(1);
+    setTime(roundTime);
+  }
+
+  // Button handling
+  function handleButtonPress(action: string) {
+    switch (action) {
+      case "roundTime":
+      case "restTime":
+      case "intBeep":
+      case "rounds":
+        setMode(action);
+        break;
+      case "up":
+        adjustSetting(1);
+        break;
+      case "down":
+        adjustSetting(-1);
+        break;
+      case "start":
+        start();
+        break;
+      case "stop":
+        stop();
+        break;
+    }
+  }
+
+  // Text measured before the font loads keeps the wrong width and gets truncated
+  if (!fontsLoaded && !fontError) return null;
+
+  return (
+    <View className="flex-1 border-4 border-red-500 rounded-[60px] overflow-hidden">
+      <Screen
+        time={time}
+        phase={phase}
+        mode={mode}
+        roundTime={roundTime}
+        restTime={restTime}
+        intBeep={intBeep}
+        rounds={rounds}
+        currentRound={currentRound}
+      />
+
+      <Controls onButtonPress={handleButtonPress} />
+    </View>
+  );
+}
