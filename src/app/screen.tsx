@@ -1,7 +1,4 @@
-
-import { Text, useWindowDimensions, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import SevenSegment from "../components/seven-segment";
+import { Text, View } from "react-native";
 import type { Phase } from "./timer";
 
 type Mode = "roundTime" | "restTime" | "intBeep" | "rounds";
@@ -10,127 +7,94 @@ type ScreenProps = {
   time: number;
   phase: Phase;
   mode: Mode | undefined;
+  isRunning: boolean;
   roundTime: number;
   restTime: number;
   intBeep: number;
   rounds: number;
   currentRound: number;
 };
-// Case border plus faceplate margin on each side
-const WINDOW_INSET = 22;
 
-function toDigits(time: number) {
+const modeLabels: Record<Mode, string> = {
+  roundTime: "round time",
+  restTime: "rest time",
+  intBeep: "interval beep",
+  rounds: "rounds",
+};
+
+export function formatTime(time: number) {
   const minutes = Math.floor(time / 60);
   const seconds = time % 60;
 
-  return [minutes, Math.floor(seconds / 10), seconds % 10];
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
 export default function Screen({
   time,
   phase,
   mode,
+  isRunning,
   roundTime,
   restTime,
   intBeep,
   rounds,
   currentRound,
 }: ScreenProps) {
-  let out: number;
+  let out = formatTime(time);
 
-  // Display current timer while running or paused
-  if (phase !== "ready" || mode === undefined) {
-    out = time;
-  } else {
-    // Display selected setting
+  // Show the selected setting until the timer starts
+  if (phase === "ready" && mode !== undefined) {
     switch (mode) {
       case "roundTime":
-        out = roundTime;
+        out = formatTime(roundTime);
         break;
       case "restTime":
-        out = restTime;
+        out = formatTime(restTime);
         break;
       case "intBeep":
-        out = intBeep;
+        out = intBeep === 0 ? "OFF" : formatTime(intBeep);
         break;
       case "rounds":
-        out = rounds;
+        out = String(rounds);
         break;
-      default:
-        out = time;
     }
   }
 
-  const insets = useSafeAreaInsets();
-  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const paused = !isRunning && (phase === "runningRound" || phase === "runningRest");
 
-  const windowW = windowWidth - WINDOW_INSET * 2;
-  const cellWidth = windowW / 3;
-  const cellHeight = Math.min(cellWidth * 1.3, windowHeight * 0.18);
-
-  const label =
-    phase === "runningRound"
-      ? `ROUND ${currentRound}`
+  const label = paused
+    ? "paused"
+    : phase === "runningRound"
+      ? `round ${currentRound} of ${rounds}`
       : phase === "runningRest"
-        ? "REST"
+        ? "rest"
         : phase === "finished"
-          ? "FINISHED"
-          : mode?.toUpperCase() ?? "READY";
+          ? "finished"
+          : mode
+            ? modeLabels[mode]
+            : "ready";
+
+  const marker = paused
+    ? "#F1EB22"
+    : phase === "runningRound"
+      ? "#159FD0"
+      : phase === "runningRest"
+        ? "#D10B78"
+        : "#171516";
 
   return (
-    <View style={{ alignItems: "center", paddingTop: insets.top }}>
+    <View className="flex-1 items-center justify-center px-4">
       <Text
-        style={{
-          fontFamily: "Anton",
-          color: "#fff",
-          fontSize: 34,
-          lineHeight: 48,
-          letterSpacing: 1,
-        }}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        style={{ fontFamily: "Silkscreen", color: "#171516", fontSize: 112 }}
       >
-        TITLE
+        {out}
       </Text>
 
-      {/* Display window: three smoked digit cells */}
-      <View style={{ flexDirection: "row", width: windowW, backgroundColor: "#000" }}>
-        {toDigits(out).map((digit, index) => (
-          <View
-            key={index}
-            style={{
-              width: cellWidth,
-              height: cellHeight,
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: "#1f0305",
-              borderLeftWidth: index === 0 ? 0 : 2,
-              borderLeftColor: "#000",
-            }}
-          >
-            <SevenSegment
-              digit={digit}
-              width={cellWidth - 4}
-              height={cellHeight - 8}
-            />
-          </View>
-        ))}
-      </View>
-
-      {/* CLASSIC wordmark, with the status where the real unit has small print */}
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          width: windowW,
-          marginTop: 6,
-        }}
-      >
-        <Text
-          style={{ fontFamily: "AlfaSlabOne", color: "#fff", fontSize: 32, lineHeight: 42 }}
-        >
-          CLASSIC
-        </Text>
-        <Text numberOfLines={1} style={{ color: "#fff", fontSize: 14, fontWeight: "700" }}>
+      <View className="flex-row items-center" style={{ gap: 10, marginTop: 8 }}>
+        <View style={{ width: 16, height: 16, backgroundColor: marker }} />
+        <Text style={{ fontFamily: "BodoniModa", color: "#171516", fontSize: 28 }}>
           {label}
         </Text>
       </View>

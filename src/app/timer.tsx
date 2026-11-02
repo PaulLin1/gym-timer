@@ -3,6 +3,7 @@ import { useFonts } from "expo-font";
 import { StatusBar } from "expo-status-bar";
 import { useState, useEffect, useRef } from "react";
 import { View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Controls from "./controls";
 import Screen from "./screen";
 
@@ -20,9 +21,10 @@ function replay(player: AudioPlayer) {
 }
 
 export default function Timer() {
+  const insets = useSafeAreaInsets();
   const [fontsLoaded, fontError] = useFonts({
-    Anton: require("../../assets/fonts/Anton-Regular.ttf"),
-    AlfaSlabOne: require("../../assets/fonts/AlfaSlabOne-Regular.ttf"),
+    Silkscreen: require("../../assets/fonts/Silkscreen-Regular.ttf"),
+    BodoniModa: require("../../assets/fonts/BodoniModa.ttf"),
   });
 
   // Timer state
@@ -164,16 +166,20 @@ export default function Timer() {
     }
   }
 
-  // Text measured before the font loads keeps the wrong width and gets truncated
+  // Text measured before the fonts load keeps the wrong width
   if (!fontsLoaded && !fontError) return null;
 
   return (
-    <View className="flex-1 border-[8px] border-[#d9402c] rounded-[60px] overflow-hidden bg-[#050505]">
-      <StatusBar style="light" />
+    <View
+      className="flex-1 bg-white"
+      style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}
+    >
+      <StatusBar style="dark" />
       <Screen
         time={time}
         phase={phase}
         mode={mode}
+        isRunning={isRunning}
         roundTime={roundTime}
         restTime={restTime}
         intBeep={intBeep}
@@ -181,7 +187,16 @@ export default function Timer() {
         currentRound={currentRound}
       />
 
-      <Controls onButtonPress={handleButtonPress} />
+      <Controls
+        onButtonPress={handleButtonPress}
+        mode={mode}
+        phase={phase}
+        isRunning={isRunning}
+        roundTime={roundTime}
+        restTime={restTime}
+        intBeep={intBeep}
+        rounds={rounds}
+      />
     </View>
   );
 }
