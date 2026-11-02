@@ -1,5 +1,6 @@
 import { useAudioPlayer, type AudioPlayer } from "expo-audio";
 import { useFonts } from "expo-font";
+import { StatusBar } from "expo-status-bar";
 import { useState, useEffect, useRef } from "react";
 import { View } from "react-native";
 import Controls from "./controls";
@@ -20,7 +21,8 @@ function replay(player: AudioPlayer) {
 
 export default function Timer() {
   const [fontsLoaded, fontError] = useFonts({
-    Digital: require("../../assets/fonts/digital-7 (mono italic).ttf"),
+    Anton: require("../../assets/fonts/Anton-Regular.ttf"),
+    AlfaSlabOne: require("../../assets/fonts/AlfaSlabOne-Regular.ttf"),
   });
 
   // Timer state
@@ -49,7 +51,9 @@ export default function Timer() {
   }, [isRunning]);
 
   // Round start / end beep
-  const roundBeep = useAudioPlayer(require("../../assets/sounds/round-beep.wav"));
+  const roundBeep = useAudioPlayer(
+    require("../../assets/sounds/round-beep.wav"),
+  );
 
   // Handle round/rest transitions
   useEffect(() => {
@@ -70,7 +74,16 @@ export default function Timer() {
       setPhase("runningRound");
       setTime(roundTime);
     }
-  }, [time, isRunning, phase, currentRound, rounds, roundTime, restTime, roundBeep]);
+  }, [
+    time,
+    isRunning,
+    phase,
+    currentRound,
+    rounds,
+    roundTime,
+    restTime,
+    roundBeep,
+  ]);
 
   // Interval beep
   const beep = useAudioPlayer(require("../../assets/sounds/beep.wav"));
@@ -155,7 +168,8 @@ export default function Timer() {
   if (!fontsLoaded && !fontError) return null;
 
   return (
-    <View className="flex-1 border-4 border-red-500 rounded-[60px] overflow-hidden">
+    <View className="flex-1 border-[8px] border-[#d9402c] rounded-[60px] overflow-hidden bg-[#050505]">
+      <StatusBar style="light" />
       <Screen
         time={time}
         phase={phase}
