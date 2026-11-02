@@ -1,4 +1,4 @@
-import { useAudioPlayer } from "expo-audio";
+import { useAudioPlayer, type AudioPlayer } from "expo-audio";
 import { useFonts } from "expo-font";
 import { useState, useEffect, useRef } from "react";
 import { View } from "react-native";
@@ -11,6 +11,11 @@ export type Phase = "ready" | "runningRound" | "runningRest" | "finished";
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
+}
+
+// seekTo is async: playing before it finishes does nothing on a sound that already ended
+function replay(player: AudioPlayer) {
+  player.seekTo(0).then(() => player.play());
 }
 
 export default function Timer() {
@@ -43,9 +48,14 @@ export default function Timer() {
     return () => clearInterval(interval);
   }, [isRunning]);
 
+  // Round start / end beep
+  const roundBeep = useAudioPlayer(require("../../assets/sounds/round-beep.wav"));
+
   // Handle round/rest transitions
   useEffect(() => {
     if (!isRunning || time !== 0) return;
+
+    replay(roundBeep);
 
     if (phase === "runningRound") {
       if (currentRound >= rounds) {
@@ -60,7 +70,7 @@ export default function Timer() {
       setPhase("runningRound");
       setTime(roundTime);
     }
-  }, [time, isRunning, phase, currentRound, rounds, roundTime, restTime]);
+  }, [time, isRunning, phase, currentRound, rounds, roundTime, restTime, roundBeep]);
 
   // Interval beep
   const beep = useAudioPlayer(require("../../assets/sounds/beep.wav"));
@@ -74,8 +84,7 @@ export default function Timer() {
 
     const elapsed = roundTime - time;
     if (time > 0 && elapsed > 0 && elapsed % intBeep === 0) {
-      beep.seekTo(0);
-      beep.play();
+      replay(beep);
     }
   }, [time, isRunning, phase, intBeep, roundTime, beep]);
 
@@ -86,7 +95,7 @@ export default function Timer() {
         setRoundTime((prev) => clamp(prev + direction * 60, 60, 9 * 60));
         break;
       case "restTime":
-        setRestTime((prev) => clamp(prev + direction * 5, 0, 90));
+        setRestTime((prev) => clamp(prev + direction * 5, 10, 90));
         break;
       case "intBeep":
         setIntBeep((prev) => clamp(prev + direction * 5, 0, 60));
@@ -100,6 +109,7 @@ export default function Timer() {
   // Start / pause / resume
   function start() {
     if (phase === "ready" || phase === "finished") {
+      replay(roundBeep);
       setCurrentRound(1);
       setTime(roundTime);
       setPhase("runningRound");
